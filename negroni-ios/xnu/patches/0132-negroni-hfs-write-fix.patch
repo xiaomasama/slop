@@ -1,0 +1,22 @@
+--- a/bsd/negroni_hfs/core/hfs_btreeio.c
++++ b/bsd/negroni_hfs/core/hfs_btreeio.c
+@@ -539,8 +539,7 @@
+ 	lockflags = 0;
+ 
+ 	if ((filePtr->fcbEOF % btInfo.nodeSize) != 0) {
+-		panic("hfs: extendbtree: fcb %p has eof 0x%llx not a multiple of 0x%x (trim %llx)\n",
+-			  filePtr, filePtr->fcbEOF, btInfo.nodeSize, trim);
++		filePtr->fcbEOF -= (filePtr->fcbEOF % btInfo.nodeSize);
+ 	}
+ 
+ 	/*
+--- a/bsd/negroni_hfs/core/VolumeAllocation.c
++++ b/bsd/negroni_hfs/core/VolumeAllocation.c
+@@ -3136,6 +3136,7 @@
+ 	u_int32_t	wordsPerBlock;
+ 	// XXXdbg
+ 	struct hfsmount *hfsmp = VCBTOHFS(vcb);
++	do_validate = false;
+ 
+ 	if (hfs_kdebug_allocation & HFSDBG_BITMAP_ENABLED)
+ 		KERNEL_DEBUG_CONSTANT(HFSDBG_MARK_FREE_BITMAP | DBG_FUNC_START, startingBlock_in, numBlocks_in, do_validate, 0, 0);
