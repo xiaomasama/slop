@@ -1,0 +1,22 @@
+--- a/bsd/dev/negroni_ufs.c
++++ b/bsd/dev/negroni_ufs.c
+@@ -740,7 +740,6 @@
+ 	/* Input drivers (HID services in iokit/Kernel/arm/hid/NegroniHID.cpp). */
+ 	negroni_cpufreq_init();
+ 	negroni_probe_menu();
+-	negroni_adreno_init();
+ 	negroni_wifi_init();
+ 	negroni_keys_init();
+ 	negroni_touch_init();
+--- a/bsd/kern/bsd_init.c
++++ b/bsd/kern/bsd_init.c
+@@ -1080,6 +1080,9 @@
+ 	bsd_init_kprintf("calling bsd_utaskbootstrap\n");
+ 	bsd_utaskbootstrap();
+ 
++	extern void negroni_adreno_init(void);
++	negroni_adreno_init();
++
+ 	pal_kernel_announce();
+ 
+ 	bsd_init_kprintf("calling mountroot_post_hook\n");
