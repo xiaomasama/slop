@@ -305,7 +305,7 @@ index 3386688..1e145df 100644
 +	space_faulted(&core_space);
 +}
 +
-+/* After step 22 with negroniadreno_keep=1: the fences start at 0 and the service is made. */
++/* After step 21 with negroniadreno_keep=1: the fences start at 0 and the service is made. */
 +static void
 +gpu_keep(void)
 +{
@@ -329,7 +329,7 @@ index 3386688..1e145df 100644
  	(void)PE_parse_boot_argn("negroniadreno_keep", &keep, sizeof(keep));
  	if (!keep && last >= 4) {
  		gpu_stop();
-+	} else if (keep && !failed && last >= 22) {
++	} else if (keep && !failed && last >= 21) {
 +		gpu_keep();
  	}
  }
