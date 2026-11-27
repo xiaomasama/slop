@@ -1,0 +1,66 @@
+diff --git a/iokit/Kernel/arm/NegroniPlatformExpert.cpp b/iokit/Kernel/arm/NegroniPlatformExpert.cpp
+index efacf7d..da1ff6a 100644
+--- a/iokit/Kernel/arm/NegroniPlatformExpert.cpp
++++ b/iokit/Kernel/arm/NegroniPlatformExpert.cpp
+@@ -10,11 +10,32 @@
+ #include <IOKit/IODeviceTreeSupport.h>
+ #include <IOKit/IOLib.h>
+ 
++/*
++ * PSCI 1.0 system calls through the SMC conduit used by the shim. The
++ * generic ARM64 halt path only calls the platform expert; without this the
++ * kernel prints "CPU halted" / "MACH Reboot" and spins, leaving the HFS root
++ * dirty. A successful SYSTEM_OFF or SYSTEM_RESET does not return.
++ */
++static int32_t
++negroni_psci_system_call(uint32_t function)
++{
++	register uint64_t x0 __asm__("x0") = function;
++
++	__asm__ volatile("smc #0"
++	    : "+r"(x0)
++	    :
++	    : "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9",
++	      "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17",
++	      "cc", "memory");
++	return (int32_t)x0;
++}
++
+ class NegroniPlatformExpert : public IODTPlatformExpert {
+ 	OSDeclareDefaultStructors(NegroniPlatformExpert);
+ 
+ public:
+ 	bool start(IOService *provider) APPLE_KEXT_OVERRIDE;
++	int haltRestart(unsigned int type) APPLE_KEXT_OVERRIDE;
+ 	void processTopLevel(IORegistryEntry *root) APPLE_KEXT_OVERRIDE;
+ 	const char *deleteList(void) APPLE_KEXT_OVERRIDE;
+ 	const char *excludeList(void) APPLE_KEXT_OVERRIDE;
+@@ -36,6 +57,28 @@ NegroniPlatformExpert::start(IOService *provider)
+ 	return true;
+ }
+ 
++int
++NegroniPlatformExpert::haltRestart(unsigned int type)
++{
++	int32_t result = -1;
++
++	if (type == kPEHaltCPU) {
++		/* PSCI SYSTEM_OFF; if the monitor refuses it, at least reset cleanly. */
++		result = negroni_psci_system_call(0x84000008);
++		if (result != 0) {
++			result = negroni_psci_system_call(0x84000009);
++		}
++	} else if (type == kPERestartCPU) {
++		/* PSCI SYSTEM_RESET */
++		result = negroni_psci_system_call(0x84000009);
++	} else {
++		return IODTPlatformExpert::haltRestart(type);
++	}
++
++	IOLog("NEGRONI: PSCI halt/restart type %u returned %d\n", type, result);
++	return result;
++}
++
+ const char *
+ NegroniPlatformExpert::deleteList(void)
+ {
